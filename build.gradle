@@ -1,0 +1,4 @@
+plugins { id 'taack-grails-assets-plugin' }
+// Standalone materials plugin; depends on the existing host authentication setup.
+// Include as project(':materials') in the Grails server settings.
+grails { plugins { implementation project(':crew') } }

@@ -10,6 +10,28 @@ class MaterialController {
     MaterialService materialService
     def springSecurityService
 
+    /**
+     * Resolve the optional Server Administration event service at runtime,
+     * avoiding a compile-time dependency between the two Grails plugins.
+     * A failure to audit is logged rather than hiding a successful material edit.
+     */
+    private void reportMaterialEvent(String type, Material material, Map details = [:]) {
+        try {
+            def context = grailsApplication.mainContext
+            if (!context.containsBean('serverEventService')) {
+                log.warn("Materials event {} not recorded: Server Administration is not installed", type)
+                return
+            }
+            String actor = springSecurityService?.currentUser?.username?.toString()
+            context.getBean('serverEventService').record(
+                type, 'materials', 'Material', material.id,
+                actor, "${type}: ${material.name}", details
+            )
+        } catch (Exception ex) {
+            log.error("Failed to report Materials event ${type} for material ${material?.id}", ex)
+        }
+    }
+
     /** Read-only lookup in the existing PLM domain. No material-side part storage. */
     private List<Map> findPlmPartsUsingMaterial(String materialName) {
         if (!materialName?.trim()) return []
@@ -84,8 +106,13 @@ class MaterialController {
         Material m = new Material()
         if (!populate(m)) { render(view:'create',model:[material:m,categories:MaterialCategory.findAllByActive(true,[sort:'name']),propertiesText:params.propertiesJson ?: '{}',editing:false]);return }
         if (!m.save(flush:true)) { flash.error=m.errors.allErrors.collect { it.defaultMessage }.join('; ');render(view:'create',model:[material:m,categories:MaterialCategory.findAllByActive(true,[sort:'name']),propertiesText:params.propertiesJson ?: '{}',editing:false]);return }
+        reportMaterialEvent('MATERIAL_ADD', m, [
+            name: m.name, categoryId: m.category?.id,
+            categoryName: m.category?.name, densityKgM3: m.densityKgM3,
+            active: m.active
+        ])
         flash.message='Material created.'
-        redirect(action:'show',id:m.id)
+        response.sendRedirect('/material/show/' + m.id.toString())
     }
 
     @Secured(['ROLE_ADMIN'])
@@ -93,10 +120,21 @@ class MaterialController {
     def update(Long id) {
         Material m = Material.get(id)
         if (!m) { response.sendError(404);return }
+        Map previous = [
+            name: m.name, categoryId: m.category?.id,
+            categoryName: m.category?.name, densityKgM3: m.densityKgM3,
+            active: m.active
+        ]
         if (!populate(m)) { render(view:'edit',model:[material:m,categories:MaterialCategory.findAllByActive(true,[sort:'name']),propertiesText:params.propertiesJson ?: '{}',editing:true]);return }
         if (!m.save(flush:true)) { flash.error=m.errors.allErrors.collect { it.defaultMessage }.join('; ');render(view:'edit',model:[material:m,categories:MaterialCategory.findAllByActive(true,[sort:'name']),propertiesText:params.propertiesJson ?: '{}',editing:true]);return }
+        reportMaterialEvent('MATERIAL_EDIT', m, [
+            previous: previous,
+            current: [name: m.name, categoryId: m.category?.id,
+                      categoryName: m.category?.name, densityKgM3: m.densityKgM3,
+                      active: m.active]
+        ])
         flash.message='Material updated.'
-        redirect(action:'show',id:m.id)
+        response.sendRedirect('/material/show/' + m.id.toString())
     }
 
     private boolean populate(Material m) {
@@ -121,8 +159,12 @@ class MaterialController {
         if (!m) { response.sendError(404);return }
         m.active=false
         m.save(flush:true,failOnError:true)
+        reportMaterialEvent('MATERIAL_DELETE', m, [
+            name: m.name, categoryId: m.category?.id,
+            categoryName: m.category?.name, deactivated: true
+        ])
         flash.message='Material deactivated.'
-        redirect(action:'index')
+        response.sendRedirect('/material/index')
     }
 
     @Secured(['ROLE_ADMIN'])
@@ -135,11 +177,11 @@ class MaterialController {
     def saveCategory() {
         String name=params.name?.trim()
         MaterialCategory parent=params.long('parentId') ? MaterialCategory.get(params.long('parentId')) : null
-        if (!name || name.length()>120) { flash.error='Category name is required (max 120 characters).';redirect(action:'categories');return }
+        if (!name || name.length()>120) { flash.error='Category name is required (max 120 characters).';response.sendRedirect('/material/categories');return }
         MaterialCategory c=new MaterialCategory(name:name,description:params.description?.trim(),parent:parent,active:true,displayOrder:params.int('displayOrder') ?: 0)
         if (!c.save(flush:true)) flash.error=c.errors.allErrors.collect {it.defaultMessage}.join('; ')
         else flash.message='Category created.'
-        redirect(action:'categories')
+        response.sendRedirect('/material/categories')
     }
 
     @Secured(['ROLE_ADMIN'])
@@ -149,7 +191,7 @@ class MaterialController {
         if (!c) { response.sendError(404);return }
         MaterialCategory parent=params.long('parentId') ? MaterialCategory.get(params.long('parentId')) : null
         if (parent?.id==c.id || (parent && materialService.descendants(c)*.id.contains(parent.id))) {
-            flash.error='A category cannot be its own descendant.';redirect(action:'categories');return
+            flash.error='A category cannot be its own descendant.';response.sendRedirect('/material/categories');return
         }
         c.name=params.name?.trim()
         c.description=params.description?.trim()
@@ -158,6 +200,6 @@ class MaterialController {
         c.active=params.active == 'on'
         if (!c.save(flush:true)) flash.error=c.errors.allErrors.collect {it.defaultMessage}.join('; ')
         else flash.message='Category updated.'
-        redirect(action:'categories')
+        response.sendRedirect('/material/categories')
     }
 }

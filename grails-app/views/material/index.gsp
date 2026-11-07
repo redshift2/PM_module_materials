@@ -1,175 +1,96 @@
-<!doctype html>
-<html>
-<head>
-<meta name="layout" content="main"/>
-<title>PLM Workspaces</title>
-<style>
-/* Self-contained styles: this server does not load Bootstrap on GSP pages. */
-body .pmw{font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#dce2e8;background:#22272e;padding:0 24px 32px;min-height:100vh}
-body .pmw *{box-sizing:border-box}
-body .pmw h1{font-size:24px;margin:0;font-weight:600;color:#f4f6f8}
-body .pmw h2{font-size:16px;margin:0;color:#f4f6f8}
-body .pmw a{color:#7ab8e8;text-decoration:none}
-body .pmw a:hover{text-decoration:underline}
-body .pmw .pmw-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0 -24px 18px;padding:17px 24px;background:#195d8f;min-height:72px}
-body .pmw .pmw-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-body .pmw .pmw-card{border:1px solid #454d56;background:#2c323a;border-radius:5px;margin-bottom:16px;overflow:hidden}
-body .pmw .pmw-card-title{background:#353d47;padding:11px 14px;border-bottom:1px solid #4b5561}
-body .pmw .pmw-card-content{padding:14px}
-body .pmw .pmw-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 11px;border:1px solid #596675;border-radius:4px;background:#414c58;color:#f0f4f8;font:inherit;cursor:pointer;text-decoration:none;min-height:34px}
-body .pmw .pmw-header .pmw-btn{background:#285e86;border-color:#8bb4d3;color:#fff}
-body .pmw .pmw-header .pmw-btn:hover{background:#377eaf}
-body .pmw .pmw-btn:hover{background:#526172;color:#fff;text-decoration:none}
-body .pmw .pmw-primary{background:#206ca3;border-color:#337fb7;color:#fff}
-body .pmw .pmw-danger{background:#6c3038;border-color:#93444e}
-body .pmw .pmw-icon{width:15px;height:15px;display:inline-block;vertical-align:middle;fill:currentColor}
-body .pmw input,body .pmw select{background:#20262e;color:#f3f5f8;border:1px solid #647180;border-radius:4px;padding:7px 9px;font:inherit}
-body .pmw input{max-width:100%}
-body .pmw label{display:block;margin-bottom:4px;color:#dce2e8;font-weight:600}
-body .pmw .pmw-form{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
-body .pmw .pmw-form>div{min-width:180px;flex:1}
-body .pmw .pmw-form input{width:100%}
-body .pmw .pmw-table-scroll{overflow-x:auto}
-body .pmw table{width:100%;border-collapse:collapse;text-align:left}
-body .pmw th{background:#3a434e;color:#f0f4f8;border-bottom:2px solid #65717f;padding:10px 12px;white-space:nowrap}
-body .pmw td{border-bottom:1px solid #4c5662;padding:9px 12px;vertical-align:middle}
-body .pmw tbody tr:nth-child(even){background:#313943}
-body .pmw tbody tr:hover{background:#404d5b}
-body .pmw .pmw-row-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-body .pmw .pmw-row-actions form{margin:0}
-body .pmw .pmw-error{background:#64333b;color:#fff;padding:10px;border-radius:4px;margin:10px 0}
-body .pmw .pmw-muted{color:#b4c0cc}
-body .pmw dialog{background:#2d353f;color:#edf2f7;border:1px solid #667483;border-radius:6px;padding:18px;min-width:min(450px,90vw);box-shadow:0 10px 40px #0009}
-body .pmw dialog::backdrop{background:#0009}
-body .pmw dialog label{margin-top:10px}
-body .pmw dialog input,body .pmw dialog select{width:100%}
-body .pmw dialog .pmw-actions{margin-top:16px;justify-content:flex-end}
-/* Restore the site-wide dark background and eliminate the white surround. */
-html,body{margin:0!important;padding:0!important;background:#22272e!important;color:#f0f3f7!important}
-/* Pull the opaque blue header over the host layout's tiny page title. */
-body .pmw{max-width:none!important;margin:-36px 0 0!important;position:relative;z-index:2}
-body .pmw .pmw-header{position:relative;z-index:3}
-body .pmw .pmw-success{background:#244b37;color:#d8f5e2;padding:10px;border-radius:4px;margin:10px 0}
-</style>
-</head>
-<body>
-<div class="pmw">
-  <div class="pmw-header">
-    <h1>Workspace Manager</h1>
-    <div class="pmw-actions">
-      <g:link controller="plm" action="parts" class="pmw-btn">&#8592; PLM Parts</g:link>
-      <g:link uri="/" class="pmw-btn">Server Home</g:link>
-    </div>
-  </div>
-  <g:if test="${flash.error}"><div class="pmw-error">${flash.error.encodeAsHTML()}</div></g:if>
-  <g:if test="${flash.message}"><div class="pmw-success">${flash.message.encodeAsHTML()}</div></g:if>
-  <section class="pmw-card">
-    <div class="pmw-card-title"><h2>Create Workspace</h2></div>
-    <div class="pmw-card-content">
-      <g:form action="create" method="POST" class="pmw-form">
-        <div><label for="pmw-create-name">Name</label><input id="pmw-create-name" name="name" required maxlength="160"/></div>
-        <div><label for="pmw-create-description">Description</label><input id="pmw-create-description" name="description" maxlength="2000"/></div>
-        <button type="submit" class="pmw-btn pmw-primary">+ Create Workspace</button>
-      </g:form>
-    </div>
-  </section>
-  <section class="pmw-card">
-    <div class="pmw-card-title"><h2>All Accessible Workspaces</h2></div>
-    <div class="pmw-table-scroll">
-      <table>
-        <thead><tr><th>Workspace</th><th>Description</th><th>Owner</th><th>Revision</th><th>Actions</th></tr></thead>
-        <tbody>
-          <g:each in="${workspaces}" var="w">
-            <tr>
-              <td><g:link action="show" id="${w.id}">${w.name.encodeAsHTML()}</g:link></td>
-              <td>${w.description?.encodeAsHTML() ?: '—'}</td>
-              <td>${w.owner?.username?.encodeAsHTML() ?: '—'}</td>
-              <td>${w.inventoryRevision}</td>
-              <td>
-                <div class="pmw-row-actions">
-                  <g:link action="show" id="${w.id}" class="pmw-btn" title="Open workspace">Open</g:link>
-                  <button type="button" class="pmw-btn" title="Copy workspace" onclick="document.getElementById('pmw-copy-${w.id}').showModal()">
-                    <svg class="pmw-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"/></svg> Copy
-                  </button>
-                  <g:if test="${w.owner?.id == currentUserId}">
-                    <button type="button" class="pmw-btn" title="Edit workspace" onclick="document.getElementById('pmw-edit-${w.id}').showModal()">
-                      <svg class="pmw-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg> Edit
-                    </button>
-                    <button type="button" class="pmw-btn" title="Share workspace" onclick="document.getElementById('pmw-share-${w.id}').showModal()">
-                      <svg class="pmw-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.4 3.4 0 0 0 0-1.4l7.05-4.11a3 3 0 1 0-.94-1.76L7.97 9.54a3 3 0 1 0 0 4.92l7.12 4.16a3 3 0 1 0 2.91-2.54z"/></svg> Share
-                    </button>
-                    <g:form action="delete" id="${w.id}" method="POST">
-                      <button type="submit" class="pmw-btn pmw-danger" title="Delete workspace" onclick="return confirm('Delete this workspace? This cannot be undone.')">
-                        <svg class="pmw-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg> Delete
-                      </button>
-                    </g:form>
-                  </g:if>
-                </div>
-                <dialog id="pmw-copy-${w.id}">
-                  <h2>Copy Workspace</h2>
-                  <g:form action="duplicate" id="${w.id}" method="POST">
-                    <label>New workspace name</label><input name="name" required maxlength="160" placeholder="Workspace copy"/>
-                    <div class="pmw-actions"><button type="button" class="pmw-btn" onclick="this.closest('dialog').close()">Cancel</button><button type="submit" class="pmw-btn pmw-primary">Copy</button></div>
-                  </g:form>
-                </dialog>
-                <g:if test="${w.owner?.id == currentUserId}">
-                  <dialog id="pmw-edit-${w.id}">
-                    <h2>Edit Workspace</h2>
-                    <g:form action="updateWorkspace" id="${w.id}" method="POST">
-                      <label>Name</label><input name="name" required maxlength="160" value="${w.name?.encodeAsHTML()}"/>
-                      <label>Description</label><input name="description" maxlength="2000" value="${w.description?.encodeAsHTML() ?: ''}"/>
-                      <div class="pmw-actions"><button type="button" class="pmw-btn" onclick="this.closest('dialog').close()">Cancel</button><button type="submit" class="pmw-btn pmw-primary">Save</button></div>
-                    </g:form>
-                  </dialog>
-                  <dialog id="pmw-share-${w.id}">
-                    <h2>Share Workspace</h2>
-                    <g:form action="setMember" id="${w.id}" method="POST">
-                      <label>Username</label><input name="username" required/>
-                      <label>Access</label><select name="role"><option value="VIEWER">Viewer</option><option value="EDITOR">Editor</option></select>
-                      <div class="pmw-actions"><button type="button" class="pmw-btn" onclick="this.closest('dialog').close()">Cancel</button><button type="submit" class="pmw-btn pmw-primary">Share</button></div>
-                    </g:form>
-                    <p class="pmw-muted">To remove access or manage existing members, open this workspace.</p>
-                  </dialog>
-                </g:if>
-              </td>
-            </tr>
-          </g:each>
-          <g:if test="${!workspaces}"><tr><td colspan="5" class="pmw-muted">No accessible workspaces.</td></tr></g:if>
-        </tbody>
-      </table>
-    </div>
-  </section>
-  <section class="pmw-card" id="pmw-checked-out-parts">
-    <div class="pmw-card-title"><h2>My Checked-Out Parts</h2></div>
-    <div class="pmw-table-scroll">
-      <table>
-        <thead><tr><th>Part</th><th>CAD Version</th><th>Checked Out</th><th>Workspaces</th><th>Action</th></tr></thead>
-        <tbody>
-          <g:each in="${checkedOutParts}" var="row">
-            <tr>
-              <td><a href="/plm/showPart/${row.part.id}">${(row.part.label ?: row.part.originalName ?: 'Part ' + row.part.id).encodeAsHTML()}</a></td>
-              <td>${row.part.majorVersion}.${row.part.minorVersion}</td>
-              <td><g:formatDate date="${row.part.checkedOutAt}" format="yyyy-MM-dd HH:mm"/></td>
-              <td>
-                <g:if test="${row.workspaces}">
-                  <g:each in="${row.workspaces}" var="ws" status="idx">
-                    <g:if test="${idx > 0}">, </g:if><a href="/workspace/show/${ws.id}">${ws.name.encodeAsHTML()}</a>
-                  </g:each>
-                </g:if>
-                <g:else><span class="pmw-muted">Not in a workspace</span></g:else>
-              </td>
-              <td>
-                <form method="post" action="/workspace/undoCheckOut/${row.part.id}" onsubmit="return confirm('Undo check-out for this part?');">
-                  <button type="submit" class="pmw-btn pmw-danger">Undo Check-Out</button>
-                </form>
-              </td>
-            </tr>
-          </g:each>
-          <g:if test="${!checkedOutParts}"><tr><td colspan="5" class="pmw-muted">You have no checked-out parts.</td></tr></g:if>
-        </tbody>
-      </table>
-    </div>
-  </section>
-</div>
-</body>
-</html>
+<!doctype html><html><head><style>
+.mat-page{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;max-width:1450px;margin:0 auto;padding:24px;color:#263443;font-size:14px;line-height:1.5}.mat-page *{box-sizing:border-box}.mat-page a{color:#1768a8;text-decoration:none}.mat-page a:hover{text-decoration:underline}.mat-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}.mat-page h1{font-size:27px;font-weight:650;margin:0}.mat-page h2{font-size:17px;margin:0;font-weight:650}.mat-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.mat-card{background:#fff;border:1px solid #d4dce5;border-radius:7px;margin:16px 0;overflow:hidden;box-shadow:0 1px 3px #0000000c}.mat-card-head{background:#eef2f6;border-bottom:1px solid #d4dce5;padding:12px 16px}.mat-card-body{padding:16px}.mat-table-wrap{overflow-x:auto}.mat-page table{border-collapse:collapse;width:100%;min-width:760px;text-align:left}.mat-page th{background:#eef2f6;color:#34465b;font-weight:650;border-bottom:2px solid #ccd5df;padding:12px 14px;white-space:nowrap}.mat-page td{padding:12px 14px;border-bottom:1px solid #e2e8f0;vertical-align:middle}.mat-page tbody tr:nth-child(even){background:#f7f9fc}.mat-page tbody tr:hover{background:#eaf2f9}.mat-btn{display:inline-block;cursor:pointer;border:1px solid #aebdcc;background:#f7f9fb;color:#25405d!important;border-radius:5px;padding:7px 12px;font:inherit;text-decoration:none!important;white-space:nowrap}.mat-btn:hover{background:#e7eef5}.mat-btn-primary{background:#236fa6;border-color:#236fa6;color:#fff!important}.mat-btn-primary:hover{background:#165a8c;color:#fff!important}.mat-btn-danger{color:#ae2d36!important;border-color:#d9a1a5;background:#fff}.mat-page input,.mat-page select,.mat-page textarea{border:1px solid #b6c4d2;border-radius:4px;padding:8px 10px;font:inherit;max-width:100%;background:#fff;color:#24384d}.mat-page label{display:block;font-weight:600;margin-bottom:5px}.mat-field{margin:12px 0}.mat-field input,.mat-field select,.mat-field textarea{width:100%}.mat-muted{color:#687b8e}.mat-error{padding:12px;background:#ffeded;color:#a0202b;border-radius:4px;margin:12px 0}.mat-success{padding:12px;background:#e8f7ed;color:#176b3a;border-radius:4px;margin:12px 0}.mat-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:18px 0 0}.mat-tabs a{padding:9px 14px;background:#eef2f6;border:1px solid #d4dce5;border-radius:6px 6px 0 0}.mat-tabs a.active{background:#236fa6;color:#fff}.mat-search{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.mat-search input{min-width:220px;flex:1}.mat-subcats{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.mat-pager{display:flex;gap:12px;align-items:center}.mat-description{max-width:500px;white-space:normal}.mat-property{font-family:ui-monospace,monospace;font-size:13px}.mat-row-actions{display:flex;gap:6px}.mat-count{padding:5px 10px;background:#edf3f8;border-radius:4px;color:#34516b}
+
+
+/* Global Workspace dark theme — standalone, independent of Taack UI */
+:root{color-scheme:dark}
+html,body{margin:0!important;padding:0!important;background:#22272e!important;color:#f0f3f7!important;font-family:Arial,Helvetica,sans-serif!important;font-size:14px}
+.mat-page{max-width:none!important;margin:0!important;padding:0 22px 30px!important;background:#22272e!important;color:#f0f3f7!important;font-family:Arial,Helvetica,sans-serif!important;font-size:14px!important;min-height:calc(100vh - 24px)}
+.mat-page a{color:#74c1ff!important}.mat-page a:hover{color:#b8e2ff!important}
+.mat-page h1{color:#fff!important;font-size:24px!important;font-weight:650!important}
+.mat-page h2,.mat-page label{color:#f4f6fa!important}
+.mat-top{background:#195d8f!important;margin:0 -22px 18px!important;padding:16px 22px!important;min-height:68px!important;align-items:center!important}
+.mat-card-head .mat-top{background:transparent!important;margin:0!important;padding:0!important;min-height:0!important}
+.mat-card{background:#2b3037!important;border:1px solid #48535f!important;border-radius:5px!important;box-shadow:none!important;margin:14px 0!important}
+.mat-card-head{background:#363d46!important;border-bottom:1px solid #4b5662!important;padding:13px 15px!important}
+.mat-card-body{background:#2b3037!important}
+.mat-page table{background:#2b3037!important;color:#f0f3f7!important}
+.mat-page th{background:#3b4551!important;color:#fff!important;border-bottom:2px solid #596779!important;padding:12px 13px!important}
+.mat-page td{border-bottom:1px solid #48535f!important;color:#edf1f6!important;padding:12px 13px!important}
+.mat-page tbody tr:nth-child(even){background:#313944!important}
+.mat-page tbody tr:hover{background:#3b4857!important}
+.mat-btn{background:#414c59!important;border:1px solid #657283!important;color:#fff!important;border-radius:4px!important;padding:8px 12px!important;box-shadow:none!important}
+.mat-btn:hover{background:#526376!important;color:#fff!important}
+.mat-btn-primary{background:#1d73ad!important;border-color:#2584c3!important;color:#fff!important}
+.mat-btn-primary:hover{background:#2585c6!important}
+.mat-btn-danger{background:#742b35!important;border-color:#a14852!important;color:#fff!important}
+.mat-btn-danger:hover{background:#933540!important}
+.mat-page input,.mat-page select,.mat-page textarea{background:#242b33!important;border:1px solid #637184!important;color:#f5f7fa!important;border-radius:4px!important}
+.mat-page input::placeholder,.mat-page textarea::placeholder{color:#aab6c4!important}
+.mat-page input:focus,.mat-page select:focus,.mat-page textarea:focus{outline:2px solid #3589c9!important;outline-offset:0}
+.mat-tabs{margin:16px 0!important;gap:7px!important}
+.mat-tabs a{background:#343e49!important;border:1px solid #596677!important;border-radius:4px!important;color:#e5ecf5!important;padding:10px 15px!important}
+.mat-tabs a.active{background:#1e6da6!important;border-color:#3489c2!important;color:#fff!important}
+.mat-tabs a:hover{background:#455467!important;color:#fff!important}
+.mat-muted{color:#bdc8d4!important}.mat-count{background:#465463!important;color:#e8f3ff!important}
+.mat-description{color:#e5eaf1!important}.mat-property{color:#e5edf7!important}
+.mat-error{background:#632b34!important;color:#fff!important}.mat-success{background:#245a3b!important;color:#fff!important}
+.mat-subcats{padding:8px 0!important}
+.mat-row-actions{gap:7px!important}
+@media(max-width:700px){.mat-page{padding:0 10px 20px!important}.mat-top{margin:0 -10px 12px!important;padding:12px 10px!important}.mat-page h1{font-size:20px!important}.mat-tabs{overflow-x:auto;flex-wrap:nowrap!important}.mat-tabs a{white-space:nowrap}}
+
+
+/* Keep the blue header above any title emitted by the host Grails layout. */
+.mat-page > .mat-top{position:fixed!important;top:0!important;left:0!important;right:0!important;margin:0!important;z-index:1000!important;min-height:68px!important}
+.mat-page{padding-top:68px!important}
+/* Sticky catalogue controls: header, category tabs, catalogue name, search and table headings. */
+.mat-page{overflow:visible!important}
+.mat-top{position:sticky!important;top:0;z-index:60}
+.mat-tabs{position:sticky!important;top:var(--mat-header-bottom,68px);z-index:59;background:#22272e!important;padding:12px 0!important;margin:0!important}
+.mat-card{overflow:visible!important}
+.mat-card-head{position:sticky!important;top:var(--mat-tabs-bottom,130px);z-index:58}
+.mat-card>.mat-card-body{position:sticky!important;top:var(--mat-card-head-bottom,188px);z-index:57;background:#2b3037!important;border-bottom:1px solid #48535f}
+.mat-table-wrap{overflow:visible!important}
+.mat-page thead th{position:sticky!important;top:var(--mat-search-bottom,260px);z-index:56}
+/* The title inside the catalogue heading is not a separate sticky blue bar. */
+.mat-card-head .mat-top{position:static!important}
+</style></head><body><div class="mat-page"><div class="mat-top"><h1>Materials Library</h1><div class="mat-actions"><g:if test="${isAdmin}"><g:link action="create" class="mat-btn mat-btn-primary">+ Add Material</g:link><g:link action="categories" class="mat-btn">Manage Categories</g:link></g:if><g:link uri="/" class="mat-btn">Server Home</g:link></div></div><g:if test="${flash.error}"><div class="mat-error">${flash.error.encodeAsHTML()}</div></g:if><g:if test="${flash.message}"><div class="mat-success">${flash.message.encodeAsHTML()}</div></g:if><nav class="mat-tabs"><g:link action="index" params="${[q:query]}" class="${!selectedId ? 'active' : ''}">All Materials</g:link><g:each in="${roots}" var="root"><g:link action="index" params="${[categoryId:root.id,q:query]}" class="${activeRootId == root.id ? 'active' : ''}">${root.name.encodeAsHTML()}</g:link></g:each></nav>
+<section class="mat-card"><div class="mat-card-head"><div class="mat-top" style="margin:0"><h2>${results.category?.name?.encodeAsHTML() ?: 'All Materials'}</h2><span class="mat-count">${results.total} materials</span></div></div><div class="mat-card-body">
+<g:if test="${results.category}"><div class="mat-subcats"><g:each in="${materials.MaterialCategory.findAllByParentAndActive(results.category,true,[sort:'displayOrder'])}" var="child"><g:link action="index" params="${[categoryId:child.id,q:query]}" class="mat-btn">${child.name.encodeAsHTML()}</g:link></g:each></div></g:if>
+<g:form action="index" method="GET" class="mat-search"><g:if test="${selectedId}"><input type="hidden" name="categoryId" value="${selectedId}"/></g:if><input name="q" value="${query.encodeAsHTML()}" placeholder="Search material names and descriptions" aria-label="Search materials"/><button type="submit" class="mat-btn mat-btn-primary">Search</button><g:link action="index" params="${selectedId ? [categoryId:selectedId] : [:]}" class="mat-btn">Clear</g:link></g:form></div>
+<div class="mat-table-wrap"><table><thead><tr><th>Material</th><th>General Description</th><th>Density (kg/m³)</th><th>Young's Modulus</th><th>Poisson's Ratio</th><th>Actions</th></tr></thead><tbody>
+<g:each in="${results.items}" var="m"><g:set var="props" value="${new groovy.json.JsonSlurper().parseText(m.propertiesJson ?: '{}')}"/><tr><td><g:link action="show" id="${m.id}">${m.name.encodeAsHTML()}</g:link></td><td class="mat-description">${m.generalDescription?.encodeAsHTML() ?: '—'}</td><td>${m.densityKgM3 ?: '—'}</td><td>${props.get('Models.LinearElastic.YoungsModulus')?.toString()?.encodeAsHTML() ?: '—'}</td><td>${props.get('Models.LinearElastic.PoissonRatio')?.toString()?.encodeAsHTML() ?: '—'}</td><td><div class="mat-row-actions"><g:link action="show" id="${m.id}" class="mat-btn">View</g:link><g:if test="${isAdmin}"><g:link action="edit" id="${m.id}" class="mat-btn">Edit</g:link></g:if></div></td></tr></g:each>
+<g:if test="${!results.items}"><tr><td colspan="6" class="mat-muted">No materials found. <g:if test="${!roots}">The initial catalogue has not been seeded; check the server startup log for MATERIALS messages.</g:if></td></tr></g:if></tbody></table></div><div class="mat-card-body mat-pager"><span class="mat-muted">${results.total} matching materials</span><g:if test="${offset > 0}"><g:link action="index" params="${[categoryId:selectedId,q:query,offset:Math.max(0,offset-max),max:max]}" class="mat-btn">← Previous</g:link></g:if><g:if test="${offset + max < results.total}"><g:link action="index" params="${[categoryId:selectedId,q:query,offset:offset+max,max:max]}" class="mat-btn">Next →</g:link></g:if></div></section></div><script>
+(function () {
+  // Calculate actual stacked heights, including wrapped tabs on smaller screens.
+  function positionStickyParts() {
+    var page=document.querySelector('.mat-page');
+    if (!page) return;
+    var header=page.querySelector(':scope > .mat-top');
+    var tabs=page.querySelector(':scope > .mat-tabs');
+    var title=page.querySelector('.mat-card-head');
+    var search=page.querySelector('.mat-card > .mat-card-body');
+    if (!(header && tabs && title && search)) return;
+    var root=document.documentElement;
+    var a=header.offsetHeight;
+    page.style.paddingTop=a+'px';
+    var b=a+tabs.offsetHeight;
+    var c=b+title.offsetHeight;
+    var d=c+search.offsetHeight;
+    root.style.setProperty('--mat-header-bottom',a+'px');
+    root.style.setProperty('--mat-tabs-bottom',b+'px');
+    root.style.setProperty('--mat-card-head-bottom',c+'px');
+    root.style.setProperty('--mat-search-bottom',d+'px');
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    positionStickyParts();
+    window.addEventListener('resize',positionStickyParts);
+    if (window.ResizeObserver) {
+      var observer=new ResizeObserver(positionStickyParts);
+      ['.mat-page > .mat-top','.mat-page > .mat-tabs','.mat-card-head','.mat-card > .mat-card-body'].forEach(function(sel){
+        var el=document.querySelector(sel);if(el)observer.observe(el);
+      });
+    }
+  });
+})();
+</script></body></html>
